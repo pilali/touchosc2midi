@@ -1,11 +1,11 @@
 [Unit]
 Description=TouchOSC to MIDI Bridge (JACK MIDI, for MOD Audio)
 Documentation=https://github.com/velolala/touchosc2midi
-# Needs JACK up (creates its MIDI ports there) and the network (OSC + zeroconf).
-# mod-host is the auto-connect target, so order after it when present.
+# Ordering only (After=, no Requires/Wants): this service must NEVER pull
+# jackd/mod-host up. On this rig those are started manually on demand, so the
+# bridge stays out of the boot path. Start JACK before this service; while JACK
+# is down it just retries (Restart=always) until its JACK MIDI ports can open.
 After=jackd.service mod-host.service network-online.target
-Requires=jackd.service
-Wants=mod-host.service network-online.target
 
 [Service]
 Type=simple

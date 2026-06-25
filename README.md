@@ -116,22 +116,32 @@ OSC Configuration
 
 Running as a service (systemd)
 ------------------------------
-To keep the bridge running permanently (e.g. on a MOD Audio / pi-stomp box
-where `jackd` and `mod-host` already run as systemd services), a unit file is
-provided in `systemd/touchosc2midi.service`.
+A unit file is provided in `systemd/touchosc2midi.service` to run the bridge on
+a MOD Audio / pi-stomp box. It runs the bridge as a JACK MIDI client
+(`MIDO_BACKEND=mido.backends.rtmidi/UNIX_JACK`) so its `TouchOSC Bridge` ports
+show up in the JACK graph, and it auto-connects its MIDI output to
+`mod-host:midi_in` on start.
 
-It runs the bridge as a JACK MIDI client (`MIDO_BACKEND=mido.backends.rtmidi/UNIX_JACK`)
-so its `TouchOSC Bridge` ports show up in the JACK graph, and it auto-connects
-its MIDI output to `mod-host:midi_in` on start.
+By design the unit declares only ordering (`After=`) and **does not** `Requires=`
+or `Wants=` `jackd`/`mod-host`, so it never pulls them into the boot path. JACK
+must already be running when the bridge starts; while JACK is down it simply
+retries until its ports can open.
 
 Edit the `User`/`Group` and the `ExecStart` path to match your install, then:
 
     sudo cp systemd/touchosc2midi.service /etc/systemd/system/
     sudo systemctl daemon-reload
-    sudo systemctl enable --now touchosc2midi.service
 
+Start it by hand alongside your JACK/MOD stack:
+
+    sudo systemctl start touchosc2midi
     systemctl status touchosc2midi        # check state
     journalctl -u touchosc2midi -f        # follow logs
+
+If instead you want it to come up automatically at every boot, enable it (only
+makes sense when `jackd` is also enabled at boot):
+
+    sudo systemctl enable touchosc2midi
 
 The service creates its MIDI ports and advertises over zeroconf immediately,
 then idles waiting for the first packet from a TouchOSC device.
