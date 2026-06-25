@@ -71,7 +71,7 @@ This section shows you, how to do more specific midi configurations.
 ### Backends
 
 Since `touchosc2midi` uses `mido`, it can be configured with several backends (see:
-http://mido.readthedocs.org/en/latest/backends.html for details).
+https://mido.readthedocs.io/en/latest/backends/index.html for details).
 
 By default it tries to mimic the behavior of the original `TouchOSC Bridge` (see: http://hexler.net/software/touchosc); that is: opening virtual in- and out-ports named "TouchOSC Bridge". Therefore, it tries to use an `rtmidi` backend by default, since only this backend allows the creation of virtual midi ports.
 
@@ -86,6 +86,15 @@ lists the available full backend strings that you can use for the `MIDO_BACKEND=
 To make use of another backend, call `touchosc2midi` like this:
 
     MIDO_BACKEND=<backend string> touchosc2midi
+
+On a JACK-based rig (e.g. with `mod-host` / MOD Audio), select the JACK API so
+the `TouchOSC Bridge` ports appear in the JACK graph and can be wired to other
+JACK MIDI clients:
+
+    MIDO_BACKEND=mido.backends.rtmidi/UNIX_JACK touchosc2midi
+
+This is exactly what the bundled systemd service (see *Running as a service*
+below) does.
 
 ### Midi Ports
 
