@@ -1,17 +1,11 @@
 from setuptools import setup
 from touchosc2midi import __version__
 
-requirement_dependency_link_replacements = {
-    "git+https://github.com/dsacre/pyliblo.git@33999ca8178a01c720e99856df769f1986c7e912#egg=pyliblo-0.10.0": "pyliblo",
-}
-
-install_requires = list(set(
-    requirement_dependency_link_replacements.get(requirement.strip(), requirement.strip())
-    for requirement in open('requirements.txt') if not requirement.lstrip().startswith('#')
-    )
-)
-
-dependency_links = list(requirement_dependency_link_replacements.keys())
+install_requires = [
+    requirement.strip()
+    for requirement in open('requirements.txt')
+    if requirement.strip() and not requirement.lstrip().startswith('#')
+]
 
 setup(name='touchosc2midi',
       version=__version__,
@@ -22,7 +16,6 @@ setup(name='touchosc2midi',
       url="https://github.com/velolala/touchosc2midi",
       license="LICENSE",
       install_requires=install_requires,
-      dependency_links=dependency_links,
       packages=["touchosc2midi"],
       entry_points={"console_scripts": [
           "touchosc2midi = touchosc2midi.touchosc2midi:main"

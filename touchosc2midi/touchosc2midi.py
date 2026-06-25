@@ -21,7 +21,7 @@ import logging
 import socket
 import time
 
-import liblo
+import pyliblo3 as liblo
 import mido
 
 from docopt import docopt

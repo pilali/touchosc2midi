@@ -3,7 +3,6 @@
 Announce touchSCO-MIDI bridge via zeroconf.
 """
 import socket
-import netifaces
 from time import sleep
 from zeroconf import Zeroconf, ServiceInfo
 import logging
@@ -15,17 +14,22 @@ PORT = 12101
 
 def default_route_interface():
     """
-    Query netifaces for the default route's ip.
-    Note: this only checks for IPv4 addresses.
+    Determine the IPv4 address of the interface used for the default route.
+
+    Opens a UDP socket "connected" to a public address (no packets are
+    actually sent) and reads back the local address the OS would use to
+    reach it. This avoids depending on the unmaintained `netifaces`.
     """
-    interface = netifaces.gateways()['default']
-    if interface:
-        name = interface[netifaces.AF_INET][1]
-        ip = netifaces.ifaddresses(name)[netifaces.AF_INET][0]['addr']
-        log.debug("found '{}:{}' as default route.".format(name, ip))
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        log.debug("found '{}' as default route.".format(ip))
         return ip
-    else:
+    except OSError:
         raise RuntimeError("default interface not found. Check your network or use --ip switch.")
+    finally:
+        s.close()
 
 
 def build_service_info(ip):
@@ -37,7 +41,7 @@ def build_service_info(ip):
                            socket.gethostname(),
                            TOUCHOSC_BRIDGE
                        ),
-                       address=socket.inet_aton(ip),
+                       addresses=[socket.inet_aton(ip)],
                        port=PORT,
                        properties=dict(),
                        server=socket.gethostname() + '.local.')
@@ -86,7 +90,7 @@ class Advertisement(object):
     def get_ip(self):
         """:return: the service's IP as a string.
         """
-        return socket.inet_ntoa(self.info.address)
+        return socket.inet_ntoa(self.info.addresses[0])
 
     ip = property(get_ip)
 

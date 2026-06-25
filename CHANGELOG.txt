@@ -26,3 +26,12 @@ fixed functionality of `--ip` argument
 added python 3 compatibility (thanks @SpotlightKid)
 added sysex support (touchOSC 1.9.4+) (thanks @SpotlightKid)
 changed network interface detection to a platform independent version (thanks @h3xl3r)
+
+0.0.11 ==> 0.0.12
+modernized for recent Ubuntu / Python 3.7+:
+- switched from the unmaintained git `pyliblo` to `pyliblo3` (ships wheels, builds with modern Cython)
+- migrated to the current `zeroconf` ServiceInfo API (`addresses=[...]`)
+- dropped `netifaces`; default route detection now uses a stdlib UDP socket
+- unpinned `mido` / `python-rtmidi` to current releases, dropped the `Cython` build pin
+- removed deprecated `dependency_links` from setup.py
+- updated Dockerfile to python:3.11 and tox to py39-py312

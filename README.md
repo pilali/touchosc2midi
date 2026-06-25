@@ -19,24 +19,29 @@ Dependencies
 ------------
 `touchosc2midi` is built on top of these pip-installable packages:
 
-- `pyliblo`
-- `mido` (needs `python-rtmidi` and/or(FIXME!) `portmidi`)
+- `pyliblo3` (a maintained fork of `pyliblo` for Python 3)
+- `mido` (needs `python-rtmidi` for virtual midi ports)
 - `zeroconf`
 
 and without these, it wouldn't be such an embarrassingly trivial program.
+
+It requires Python 3.7+ and is tested on recent Ubuntu releases.
 
 Installation
 ------------
 
 ### Prerequisites
-You will need a recent version of `pip` and `cython`
+You will need a recent version of `pip`:
 
     pip install -U pip
-    pip install cython
 
-### From pypi
+Recent versions of `pyliblo3` and `python-rtmidi` ship pre-built binary
+wheels, so a plain `pip install` works out of the box on most systems. If
+no wheel is available for your platform, pip will build from source and you
+will need the OS development libraries `liblo-dev` and `librtmidi-dev`
+(Debian/Ubuntu), plus a C compiler:
 
-    pip install touchosc2midi
+    sudo apt-get install build-essential liblo-dev librtmidi-dev
 
 ### From source
 
@@ -44,7 +49,12 @@ You will need a recent version of `pip` and `cython`
     cd touchosc2midi
     pip install .
 
-`pyliblo` and `python-rtmidi` need some OS libraries installed (i.e. `liblo-dev` and `librtmidi-dev` Debian). Check out https://github.com/velolala/touchosc2midi/tree/master/docker/Dockerfile to see how to install from a plain Debian with python 2.7.
+Using a virtual environment is recommended on modern, externally-managed
+distributions:
+
+    python3 -m venv venv
+    . venv/bin/activate
+    pip install .
 
 Getting started
 ---------------
@@ -95,14 +105,36 @@ OSC Configuration
 
     touchosc2midi --ip=192.168.0.53
 
+Running as a service (systemd)
+------------------------------
+To keep the bridge running permanently (e.g. on a MOD Audio / pi-stomp box
+where `jackd` and `mod-host` already run as systemd services), a unit file is
+provided in `systemd/touchosc2midi.service`.
+
+It runs the bridge as a JACK MIDI client (`MIDO_BACKEND=mido.backends.rtmidi/UNIX_JACK`)
+so its `TouchOSC Bridge` ports show up in the JACK graph, and it auto-connects
+its MIDI output to `mod-host:midi_in` on start.
+
+Edit the `User`/`Group` and the `ExecStart` path to match your install, then:
+
+    sudo cp systemd/touchosc2midi.service /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now touchosc2midi.service
+
+    systemctl status touchosc2midi        # check state
+    journalctl -u touchosc2midi -f        # follow logs
+
+The service creates its MIDI ports and advertises over zeroconf immediately,
+then idles waiting for the first packet from a TouchOSC device.
+
 Docker
 ------
 
 The git repository contains a `Dockerfile`. To use it:
 
-    cd docker
+    docker build -t touchosc2midi:latest -f docker/Dockerfile .
 
-    docker build -t touchosc2midi:latest .
+(run from the repository root so the build context includes the sources).
 
 Above builds a container with all OS dependencies and `touchosc2midi` installed. When `run`ning, you will need to share the `/dev/snd/seq` device and expose the OSC receiving port, e.g. like this:
 

@@ -1,9 +1,13 @@
-FROM python:2.7
+FROM python:3.11-slim
 
 RUN apt-get update &&\
-    apt-get install -y liblo-dev librtmidi-dev
+    apt-get install -y --no-install-recommends \
+        gcc \
+        liblo-dev \
+        librtmidi-dev &&\
+    rm -rf /var/lib/apt/lists/*
 
-RUN pip install cython
-RUN pip install touchosc2midi
+COPY . /src
+RUN pip install --no-cache-dir /src
 
 ENTRYPOINT ["touchosc2midi"]

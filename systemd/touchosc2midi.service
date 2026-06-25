@@ -1,0 +1,39 @@
+[Unit]
+Description=TouchOSC to MIDI Bridge (JACK MIDI, for MOD Audio)
+Documentation=https://github.com/velolala/touchosc2midi
+# Needs JACK up (creates its MIDI ports there) and the network (OSC + zeroconf).
+# mod-host is the auto-connect target, so order after it when present.
+After=jackd.service mod-host.service network-online.target
+Requires=jackd.service
+Wants=mod-host.service network-online.target
+
+[Service]
+Type=simple
+# Run as the same user/group that owns the JACK server (adjust to your system).
+User=pilal
+Group=pilal
+SupplementaryGroups=audio
+
+# Allow the JACK client to use real-time scheduling (silences RT warnings)
+LimitRTPRIO=95
+LimitMEMLOCK=infinity
+
+# Expose the "TouchOSC Bridge" ports as JACK MIDI so they can be wired to mod-host
+Environment="MIDO_BACKEND=mido.backends.rtmidi/UNIX_JACK"
+
+# Adjust the path to wherever you installed the venv / entry point.
+ExecStart=/home/pilal/dev/touchosc2midi/venv/bin/touchosc2midi -v
+
+# Auto-wire the bridge's MIDI output into mod-host's MIDI input once both JACK
+# ports exist. Retries for a few seconds; never fails the unit.
+ExecStartPost=/bin/sh -c 'for i in $(seq 1 15); do /usr/bin/jack_connect "RtMidiOut Client:TouchOSC Bridge" "mod-host:midi_in" 2>/dev/null && break; sleep 1; done; exit 0'
+
+# Keep it alive; it idles waiting for the first TouchOSC packet
+Restart=always
+RestartSec=3
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
